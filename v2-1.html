@@ -201,7 +201,7 @@ function search(){
         html+=`
         <div class="row">
           <div class="label">${headers[i]}</div>
-          <div class="value">${c?c.v:"-"}</div>
+          <div class="value">${c ? (c.f ?? c.v) : "-"}</div>
         </div>`;
       });
 

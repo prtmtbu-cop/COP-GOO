@@ -58,9 +58,7 @@ header p{margin:6px 0 0;font-size:13px;opacity:.9}
  color:var(--muted);margin-bottom:10px
 }
 
-.grid{
- display:grid;gap:14px
-}
+.grid{display:grid;gap:14px}
 @media(min-width:768px){
  .grid-2{grid-template-columns:repeat(2,1fr)}
  .grid-3{grid-template-columns:repeat(3,1fr)}
@@ -85,7 +83,7 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:20px}
 </style>
 </head>
 
-<body> 
+<body>
 
 <header>
  <h1>COP-GOO</h1>
@@ -104,7 +102,7 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:20px}
 
 </div>
 
-<footer>© 2026 @bunshin </footer>
+<footer>© 2026 @bunshin</footer>
 
 <script>
 const SID="1MylKkzqWHeZslTInhMk0ntPAQSczXmd2ZOYsSe1xDkI";
@@ -121,6 +119,7 @@ function badge(s){
 function search(){
  const k=document.getElementById("key").value.trim();
  if(!k) return;
+
  document.getElementById("status").innerText="Mengambil data...";
  document.getElementById("result").innerHTML="";
 
@@ -128,54 +127,55 @@ function search(){
  encodeURIComponent(`select * where A='${k}'`))
  .then(r=>r.text()).then(t=>{
   const j=JSON.parse(t.substring(47,t.length-2));
-  if(!j.table.rows.length){
+  const rows=j.table.rows;
+  const cols=j.table.cols.map(c=>c.label);
+
+  if(!rows.length){
    document.getElementById("status").innerText="❌ Data tidak ditemukan";
    return;
   }
 
-  const row=j.table.rows[0].c;
-  const cols=j.table.cols.map(c=>c.label);
-  document.getElementById("status").innerText="✅ Data ditemukan";
+  document.getElementById("status").innerText=
+   `✅ Ditemukan ${rows.length} data`;
 
-  let html=`
-  <div class="card">
-    <h2>RSV ${row[0].v}</h2>
-    ${badge(row[6].v)}
-    <div style="margin-top:8px;font-size:14px;color:#6b7280">
-      ${row[1].f ?? row[1].v} · ${row[2].f ?? row[2].v}
+  let html="";
+
+  rows.forEach((r,idx)=>{
+   const row=r.c;
+
+   html+=`
+   <div class="card">
+     <h2>RSV ${row[0]?.v||"-"} #${idx+1}</h2>
+     ${badge(row[6]?.v)}
+     <div style="margin-top:6px;font-size:14px;color:#6b7280">
+       ${row[1]?.f ?? row[1]?.v ?? "-"} · ${row[2]?.f ?? row[2]?.v ?? "-"}
+     </div>
+   </div>
+
+   <div class="card">
+    <div class="section-title">Informasi Utama</div>
+    <div class="grid grid-3">
+     <div class="item"><i class="ph-user"></i><div class="label">COP</div><div class="value">${row[3]?.v||"-"}</div></div>
+     <div class="item"><i class="ph-clock"></i><div class="label">Shift</div><div class="value">${row[4]?.v||"-"}</div></div>
+     <div class="item"><i class="ph-truck"></i><div class="label">Request</div><div class="value">${row[7]?.v||"-"}</div></div>
     </div>
-  </div>
-
-  <div class="card">
-   <div class="section-title">Informasi Utama</div>
-   <div class="grid grid-3">
-    <div class="item"><i class="ph-user"></i><div class="label">COP</div><div class="value">${row[3]?.v||"-"}</div></div>
-    <div class="item"><i class="ph-clock"></i><div class="label">Shift</div><div class="value">${row[4]?.v||"-"}</div></div>
-    <div class="item"><i class="ph-truck"></i><div class="label">Request</div><div class="value">${row[7]?.v||"-"}</div></div>
    </div>
-  </div>
 
-  <div class="card">
-   <div class="section-title">Data Operasional</div>
-   <div class="grid grid-2">
-    <div class="item"><i class="ph-package"></i><div class="label">Total Item</div><div class="value">${row[8]?.v||0}</div></div>
-    <div class="item"><i class="ph-stack"></i><div class="label">Total DO</div><div class="value">${row[9]?.v||0}</div></div>
-   </div>
-  </div>
+   <div class="card">
+    <div class="section-title">Data Lengkap</div>
+   `;
 
-  <div class="card">
-   <div class="section-title">Data Lengkap</div>
-  `;
-
-  row.forEach((c,i)=>{
+   row.forEach((c,i)=>{
     html+=`
      <div class="detail-row">
-       <div>${cols[i]}</div>
-       <b>${c?.f ?? c?.v ?? "-"}</b>
+      <div>${cols[i]}</div>
+      <b>${c?.f ?? c?.v ?? "-"}</b>
      </div>`;
+   });
+
+   html+=`</div>`;
   });
 
-  html+=`</div>`;
   document.getElementById("result").innerHTML=html;
  });
 }

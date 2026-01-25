@@ -2,123 +2,100 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>COP-GOO Data Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>COP-GOO | Data Viewer</title>
 
 <style>
-body{
-  font-family: Arial, sans-serif;
-  background:#f4f6f8;
-  margin:0;
-  padding:16px;
+body{font-family:Arial;margin:0;background:#f4f7fb}
+header{background:#1e40af;color:#fff;padding:16px;text-align:center}
+.container{padding:16px}
+input,button{
+  width:100%;padding:14px;font-size:16px;
+  border-radius:10px;border:1px solid #ccc;margin-bottom:10px
 }
-h1{
-  text-align:center;
-  margin-bottom:10px;
+button{background:#2563eb;color:#fff;border:none}
+.card{
+  background:#fff;border-radius:14px;
+  padding:14px;margin-top:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,.08)
 }
-#result{
-  overflow-x:auto;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-  background:#fff;
-}
-th,td{
-  border:1px solid #ddd;
-  padding:8px;
-  font-size:14px;
-}
-th{
-  background:#0b5ed7;
-  color:#fff;
-  position:sticky;
-  top:0;
-}
-.loading{
-  text-align:center;
-  font-weight:bold;
-  padding:20px;
-}
-.notfound{
-  text-align:center;
-  color:red;
-  font-weight:bold;
-}
-footer{
-  text-align:center;
-  margin-top:16px;
-  font-size:12px;
-  color:#666;
-}
+.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #ddd}
+.row:last-child{border:none}
+.label{color:#555}
+.value{font-weight:bold}
+.status{text-align:center;margin-top:10px;color:#666}
 </style>
 </head>
 
 <body>
 
-<h1>COP-GOO Data</h1>
-<div id="result" class="loading">Loading data...</div>
+<header>
+<h2>COP-GOO</h2>
+<p>Data Viewer</p>
+</header>
 
-<footer>
-  COP-GOO by @bunshin
-</footer>
+<div class="container">
+<input id="key" placeholder="Masukkan RSV">
+<button onclick="search()">Cari Data</button>
+
+<div id="status" class="status"></div>
+<div id="result"></div>
+</div>
 
 <script>
-const SPREADSHEET_ID = "SPREADSHEET_ID_ANDA";
-const SHEET_NAME = "Sheet1"; // sesuaikan
+const SID = "1MylKkzqWHeZslTInhMk0ntPAQSczXmd2ZOYsSe1xDkI";
+const SHEET = "Sheet1";
 
-function loadData(){
-  const query = "select *";
-  const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?sheet=${SHEET_NAME}&tq=` 
-              + encodeURIComponent(query);
+function search(){
+  const k = document.getElementById("key").value.trim();
+  if(!k) return;
+
+  document.getElementById("status").innerText="Mengambil data...";
+  document.getElementById("result").innerHTML="";
+
+  const url = `https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?sheet=${SHEET}&tq=` +
+    encodeURIComponent(`select * where A='${k}'`);
 
   fetch(url)
-    .then(res => res.text())
-    .then(text => {
-      const json = JSON.parse(text.substring(47, text.length - 2));
-      const table = json.table;
+  .then(r=>r.text())
+  .then(text=>{
+    const json = JSON.parse(
+      text.substring(
+        text.indexOf('{'),
+        text.lastIndexOf('}')+1
+      )
+    );
 
-      if(!table || !table.rows || table.rows.length === 0){
-        showNotFound();
-        return;
-      }
+    const rows = json.table.rows;
+    const cols = json.table.cols.map(c=>c.label);
 
-      renderTable(table);
-    })
-    .catch(err=>{
-      console.error(err);
-      showNotFound();
+    if(!rows.length){
+      document.getElementById("status").innerText="❌ Data tidak ditemukan";
+      return;
+    }
+
+    document.getElementById("status").innerText=`✅ ${rows.length} data ditemukan`;
+
+    let html="";
+    rows.forEach((r,idx)=>{
+      html+=`<div class="card"><b>Data ${idx+1}</b>`;
+      r.c.forEach((c,i)=>{
+        html+=`
+          <div class="row">
+            <div class="label">${cols[i]}</div>
+            <div class="value">${c?.f ?? c?.v ?? "-"}</div>
+          </div>`;
+      });
+      html+=`</div>`;
     });
-}
 
-function renderTable(table){
-  let html = "<table><tr>";
-
-  // HEADER
-  table.cols.forEach(col=>{
-    html += `<th>${col.label || "-"}</th>`;
+    document.getElementById("result").innerHTML=html;
+  })
+  .catch(e=>{
+    document.getElementById("status").innerText="❌ Error mengambil data";
+    console.error(e);
   });
-  html += "</tr>";
-
-  // ROWS
-  table.rows.forEach(r=>{
-    html += "<tr>";
-    r.c.forEach(c=>{
-      html += `<td>${c?.f || c?.v || ""}</td>`;
-    });
-    html += "</tr>";
-  });
-
-  html += "</table>";
-  document.getElementById("result").innerHTML = html;
 }
-
-function showNotFound(){
-  document.getElementById("result").innerHTML =
-    "<div class='notfound'>DATA TIDAK DITEMUKAN</div>";
-}
-
-window.onload = loadData;
 </script>
 
 </body>
